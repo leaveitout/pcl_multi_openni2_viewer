@@ -19,11 +19,11 @@ private:
     typedef pcl::PointCloud<PointType> Cloud;
     typedef typename Cloud::ConstPtr CloudConstPtr;
 
-    boost::shared_ptr<pcl::visualization::PCLVisualizer> cloud_viewer_;
+    std::vector<boost::shared_ptr<pcl::visualization::PCLVisualizer>> cloud_viewers_;
     std::vector<boost::shared_ptr<pcl::visualization::ImageViewer>> image_viewers_;
     std::vector<boost::shared_ptr<ViewerNode<PointType>>> nodes_;
 
-    size_t current_cloud_;
+//    size_t current_cloud_;
     bool cloud_init_;
     std::vector<bool> image_init_;
 
@@ -37,11 +37,11 @@ private:
         else
             cout << " released" << endl;
 
-        if(event.getKeyCode() == 'n' && !event.keyDown())
-            current_cloud_ = (current_cloud_+1) % nodes_.size();
-
-        if(event.getKeyCode() == 'N' && !event.keyDown())
-            current_cloud_ = (current_cloud_ + nodes_.size() - 1) % nodes_.size();
+//        if(event.getKeyCode() == 'n' && !event.keyDown())
+//            current_cloud_ = (current_cloud_+1) % nodes_.size();
+//
+//        if(event.getKeyCode() == 'N' && !event.keyDown())
+//            current_cloud_ = (current_cloud_ + nodes_.size() - 1) % nodes_.size();
     }
 
     void mouseCallback(const pcl::visualization::MouseEvent& mouse_event, void*) {
@@ -52,8 +52,9 @@ private:
     }
 
     bool checkCloseCondition() {
-        if(cloud_viewer_->wasStopped())
-            return true;
+        for(auto cv: cloud_viewers_)
+            if(cv->wasStopped())
+                return true;
 
         // NB: No elements in the vector if no nodes provide image callback
         for(auto iv: image_viewers_)
@@ -63,24 +64,25 @@ private:
         return false;
     }
 
-    void updateCloudViewer() {
-        cloud_viewer_->spinOnce ();
+    void updateCloudViewer(size_t node_index) {
+        boost::shared_ptr<pcl::visualization::PCLVisualizer> current_viewer(cloud_viewers_.at(node_index));
+        current_viewer->spinOnce ();
 
         CloudConstPtr cloud;
 
-        nodes_.at(current_cloud_)->getCloud(cloud);
+        nodes_.at(node_index)->getCloud(cloud);
 
         if(cloud) {
             if (!cloud_init_) {
-                cloud_viewer_->setPosition (0, 0);
-//                cloud_viewer_->setSize (cloud->width, cloud->height);
+                current_viewer->setPosition ((int) (cloud->width * node_index), cloud->height);
+                current_viewer->setSize (cloud->width, cloud->height);
                 cloud_init_ = !cloud_init_;
             }
 
-            if (!cloud_viewer_->updatePointCloud (cloud, "OpenNICloud")) {
-                cloud_viewer_->addPointCloud (cloud, "OpenNICloud");
-                cloud_viewer_->resetCameraViewpoint ("OpenNICloud");
-                cloud_viewer_->setCameraPosition (
+            if (!current_viewer->updatePointCloud (cloud, "OpenNICloud")) {
+                current_viewer->addPointCloud (cloud, "OpenNICloud");
+                current_viewer->resetCameraViewpoint ("OpenNICloud");
+                current_viewer->setCameraPosition (
                         0,0,0,		// Position
                         0,0,1,		// Viewpoint
                         0,-1,0);	// Up
@@ -117,11 +119,10 @@ private:
 public:
 
     MultiOpenNI2Viewer(std::vector<pcl::io::OpenNI2Grabber::Ptr>& grabbers)
-            : cloud_viewer_(new pcl::visualization::PCLVisualizer("PCL MultiCloud Viewer"))
+            : cloud_viewers_()
             , image_viewers_ ()
-            , current_cloud_ (0)
             , cloud_init_ (false) {
-        for(auto g: grabbers) {
+        for(auto& g: grabbers) {
             boost::shared_ptr<ViewerNode<PointType>> node(new ViewerNode<PointType>(g));
             nodes_.push_back(node);
             image_init_.push_back(false);
@@ -129,18 +130,22 @@ public:
     }
 
     void run() {
-        cloud_viewer_->registerMouseCallback(&MultiOpenNI2Viewer::mouseCallback, *this);
-        cloud_viewer_->registerKeyboardCallback(&MultiOpenNI2Viewer::keyboardCallback, *this);
-        // TODO: Check this number for Asus Xtion
-        cloud_viewer_->setCameraFieldOfView(1.02259994f);
-
         for(size_t i=0; i<nodes_.size(); ++i) {
+            std::stringstream ss;
+            ss << "Camera " << i;
+            boost::shared_ptr<pcl::visualization::PCLVisualizer> cloud_viewer
+                    (new pcl::visualization::PCLVisualizer(ss.str() + " Cloud"));
+            cloud_viewer->registerMouseCallback(&MultiOpenNI2Viewer::mouseCallback, *this);
+            cloud_viewer->registerKeyboardCallback(&MultiOpenNI2Viewer::keyboardCallback, *this);
+            // TODO: Check this number for Asus Xtion
+            cloud_viewer->setCameraFieldOfView(1.02259994f);
+            cloud_viewers_.push_back(cloud_viewer);
+
             nodes_.at(i)->setup();
+
             if(nodes_.at(i)->providesImageCallback()) {
-                std::stringstream ss;
-                ss << "Camera " << i << " Image";
                 boost::shared_ptr<pcl::visualization::ImageViewer> image_viewer
-                        (new pcl::visualization::ImageViewer (ss.str()));
+                        (new pcl::visualization::ImageViewer (ss.str() + " Image"));
                 image_viewer->registerMouseCallback (&MultiOpenNI2Viewer::mouseCallback, *this);
                 image_viewer->registerKeyboardCallback (&MultiOpenNI2Viewer::keyboardCallback, *this);
                 image_viewers_.push_back(image_viewer);
@@ -153,9 +158,10 @@ public:
             n->start();
 
         while(!checkCloseCondition()) {
-            updateCloudViewer();
-            for(size_t i=0; i<nodes_.size(); ++i)
+            for(size_t i=0; i<nodes_.size(); ++i) {
+                updateCloudViewer(i);
                 updateImageViewer(i);
+            }
         }
 
         for(auto n: nodes_)

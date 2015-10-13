@@ -1,11 +1,8 @@
 #include <pcl/io/openni2_grabber.h>
-#include <pcl/io/openni2/openni2_device_manager.h>
 
-#include <vector>
 #include "MultiOpenNI2Viewer.h"
 
 typedef pcl::io::OpenNI2Grabber NI2Grabber;
-typedef pcl::io::openni2::OpenNI2Device NI2Device;
 typedef pcl::io::openni2::OpenNI2DeviceManager NI2DeviceManager;
 
 using namespace std;
