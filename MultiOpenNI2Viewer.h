@@ -24,7 +24,7 @@ private:
     std::vector<boost::shared_ptr<ViewerNode<PointType>>> nodes_;
 
 //    size_t current_cloud_;
-    bool cloud_init_;
+    std::vector<bool> cloud_init_;
     std::vector<bool> image_init_;
 
     void keyboardCallback(const pcl::visualization::KeyboardEvent& event, void*) {
@@ -73,10 +73,12 @@ private:
         nodes_.at(node_index)->getCloud(cloud);
 
         if(cloud) {
-            if (!cloud_init_) {
-                current_viewer->setPosition ((int) (cloud->width * node_index), cloud->height);
+            if (!cloud_init_.at(node_index)) {
+                current_viewer->setPosition (1280 * (int)node_index, 480 + 25);
                 current_viewer->setSize (cloud->width, cloud->height);
-                cloud_init_ = !cloud_init_;
+                int *size = current_viewer->getRenderWindow()->GetScreenSize();
+                cout << "Size " << size[0] << ", " << size[1] << endl;
+                cloud_init_.at(node_index) = !cloud_init_.at(node_index);
             }
 
             if (!current_viewer->updatePointCloud (cloud, "OpenNICloud")) {
@@ -120,12 +122,14 @@ public:
 
     MultiOpenNI2Viewer(std::vector<pcl::io::OpenNI2Grabber::Ptr>& grabbers)
             : cloud_viewers_()
-            , image_viewers_ ()
-            , cloud_init_ (false) {
+            , image_viewers_ () {
+        int id = 0;
         for(auto& g: grabbers) {
-            boost::shared_ptr<ViewerNode<PointType>> node(new ViewerNode<PointType>(g));
+            boost::shared_ptr<ViewerNode<PointType>> node(new ViewerNode<PointType>(g, id));
             nodes_.push_back(node);
             image_init_.push_back(false);
+            cloud_init_.push_back(false);
+            ++id;
         }
     }
 

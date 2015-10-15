@@ -1,0 +1,9 @@
+//
+// Created by sean on 13/10/15.
+//
+
+#ifndef PCL_MULTI_OPENNI2_VIEWER_UTIL_H
+#define PCL_MULTI_OPENNI2_VIEWER_UTIL_H
+
+
+#endif //PCL_MULTI_OPENNI2_VIEWER_UTIL_H

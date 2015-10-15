@@ -9,7 +9,7 @@ include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
-set(SOURCE_FILES main.cpp MultiOpenNI2Viewer.h ViewerNode.h)
+set(SOURCE_FILES main.cpp MultiOpenNI2Viewer.h ViewerNode.h Util.h Timer.cpp Timer.h)
 
 add_executable(pcl_multi_openni2_viewer ${SOURCE_FILES})
 

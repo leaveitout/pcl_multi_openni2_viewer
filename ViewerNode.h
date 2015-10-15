@@ -8,6 +8,8 @@
 
 #include <pcl/io/openni2_grabber.h>
 
+#include "Timer.h"
+
 
 template <typename PointType>
 class ViewerNode {
@@ -29,12 +31,17 @@ private:
     unsigned char *rgb_data_;
     unsigned rgb_data_size_;
 
+    boost::shared_ptr<Timer> cloud_timer_, image_timer_;
+    const int id_;
+
     void cloudCallback(const CloudConstPtr& cloud) {
+        cloud_timer_->time();
         boost::mutex::scoped_lock lock(cloud_mutex_);
         cloud_ = cloud;
     }
 
     void imageCallback(const boost::shared_ptr<pcl::io::Image> &image) {
+        image_timer_->time();
         boost::mutex::scoped_lock lock(image_mutex_);
         image_ = image;
 
@@ -51,10 +58,15 @@ private:
 
 public:
 
-    ViewerNode(pcl::io::OpenNI2Grabber::Ptr grabber)
-        : grabber_ (grabber)
-        , rgb_data_ ()
-        , rgb_data_size_ () {
+    ViewerNode(pcl::io::OpenNI2Grabber::Ptr grabber, int id)
+            : grabber_ (grabber)
+            , id_ (id)
+            , rgb_data_ ()
+            , rgb_data_size_ () {
+        std::stringstream ss1;
+        ss1 << "Camera " << id << " ";
+        cloud_timer_.reset(new Timer(ss1.str().append("Cloud Timer")));
+        image_timer_.reset(new Timer(ss1.str().append("Image TImer")));
     }
 
     void setup() {
