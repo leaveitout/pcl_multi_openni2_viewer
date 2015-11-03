@@ -10,11 +10,11 @@ using namespace std;
 int main(int argc, char** argv) {
 
     // TODO: Some argument parsing for grabber modes, etc. See PCL sample
-    boost::shared_ptr<NI2DeviceManager> deviceManager = NI2DeviceManager::getInstance();
+    auto device_manager = NI2DeviceManager::getInstance();
 
     vector<NI2Grabber::Ptr> grabbers;
 
-    size_t numDevices = deviceManager->getNumOfConnectedDevices();
+    size_t numDevices = device_manager->getNumOfConnectedDevices();
     for(size_t i=1; i<=numDevices; ++i) {
         stringstream ss;
         ss << '#' << i;
