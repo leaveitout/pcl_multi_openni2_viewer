@@ -79,3 +79,6 @@ crashlytics-build.properties
 *.out
 *.app
 
+### Project Specific
+/bin
+
