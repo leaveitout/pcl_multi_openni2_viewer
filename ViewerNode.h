@@ -96,10 +96,8 @@ public:
     }
 
     bool providesImageCallback() {
-        if (grabber_->providesCallback<void (const boost::shared_ptr<pcl::io::openni2::Image>&)>() )
-            return true;
-        else
-            return false;
+        typedef const boost::shared_ptr<pcl::io::openni2::Image>& NI2ImageConstPtr;
+        return grabber_->providesCallback<void (NI2ImageConstPtr)>();
     }
 
     void getCloud(CloudConstPtr& cloud) {
